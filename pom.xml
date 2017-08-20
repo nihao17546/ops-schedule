@@ -8,7 +8,6 @@
     <artifactId>ops-schedule</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <modules>
-        <module>ops-schedule-service</module>
         <module>ops-schedule-api</module>
         <module>ops-schedule-web</module>
     </modules>
