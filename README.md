@@ -1,5 +1,5 @@
 # ops-schedule
-分布式任务管理
+基于zookeeper的分布式任务调度
 #### 依赖
 <pre>
  &lt;dependency&gt;
