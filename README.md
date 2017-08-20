@@ -1,10 +1,33 @@
 # ops-schedule
 分布式任务管理
-## 依赖
-<pre><code>
-<dependency>
- <groupId>com.ximalaya.ops</groupId>
- <artifactId>ops-schedule-api</artifactId>
- <version>0.0.5-SNAPSHOT</version>
-</dependency>
-</code></pre>
+#### 依赖
+<pre>
+ &lt;dependency&gt;
+   &lt;groupId&gt;com.ximalaya.ops&lt;/groupId&gt;
+   &lt;artifactId&gt;ops-schedule-api&lt;/artifactId&gt;
+   &lt;version&gt;0.0.5-SNAPSHOT&lt;/version&gt;
+ &lt;/dependency&gt;
+</pre>
+#### 任务配置后台url
+http://127.0.0.1/ops-schedule-web/page/index
+#### spring整合
+<pre>
+ &lt;bean class="com.ximalaya.ops.schedule.api.ScheduleHandler"&gt;
+   &lt;property name="zk_connection" value="#{zk['zk_connection']}"/&gt;
+   &lt;property name="session_timeout" value="#{zk['session_timeout']}"/&gt;
+   &lt;property name="connection_timeout" value="#{zk['connection_timeout']}"/&gt;
+   &lt;property name="configs"&gt;
+     &lt;list&gt;
+       &lt;bean class="com.ximalaya.ops.schedule.api.JobConfig"&gt;
+         &lt;property name="group" value=""/&gt;
+         &lt;property name="key" value=""/&gt;
+         &lt;property name="mission" ref=""/&gt;
+       &lt;/bean&gt;
+     &lt;/list&gt;
+   &lt;/property&gt;
+ &lt;/bean&gt;
+</pre>
+#### JobConfig 参数说明：
+  group：任务标识，必须唯一
+  key：acl认证
+  mission：执行任务类，（须继承com.ximalaya.ops.schedule.api.Mission，并实现execute方法，execute函数为任务执行体）
