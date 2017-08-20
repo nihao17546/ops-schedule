@@ -28,6 +28,6 @@ http://127.0.0.1/ops-schedule-web/page/index
  &lt;/bean&gt;
 </pre>
 #### JobConfig 参数说明：
-  group：任务标识，必须唯一
-  key：acl认证
-  mission：执行任务类，（须继承com.ximalaya.ops.schedule.api.Mission，并实现execute方法，execute函数为任务执行体）
+  group：任务标识，必须唯一<br>
+  key：acl认证<br>
+  mission：执行任务类，（须继承com.ximalaya.ops.schedule.api.Mission，并实现execute方法，execute函数为任务执行体）<br>
