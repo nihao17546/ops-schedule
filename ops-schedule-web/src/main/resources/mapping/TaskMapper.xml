@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.ximalaya.ops.schedule.web.dao.ITaskDAO">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.ximalaya.ops.schedule.web.model.po.ScheduleTaskPO">
+        insert into tb_ops_schedule_task(`group`,`key`,`description`,`type`,`period`,`time`,`create_uid`,`create_at`,`update_uid`,`update_at`)
+        values(#{group},#{key},#{description},#{type},#{period},#{time},#{createUid},now(),#{updateUid},null)
+    </insert>
+    <select id="selectByGroup" resultType="com.ximalaya.ops.schedule.web.model.po.ScheduleTaskPO">
+        select * from tb_ops_schedule_task where `group`=#{group}
+    </select>
+    <select id="selectTaskByUserId" resultType="com.ximalaya.ops.schedule.web.model.po.ScheduleTaskPO">
+        select * from
+        ((select a.* from tb_ops_schedule_task a,tb_ops_schedule_user2task b
+        where a.id=b.task_id and b.user_id=#{userId})
+        UNION
+        (select * from tb_ops_schedule_task where create_uid=#{userId})) tb order by tb.create_at desc
+    </select>
+    <select id="selectByGroups" resultType="com.ximalaya.ops.schedule.web.model.po.ScheduleTaskPO">
+        select * from tb_ops_schedule_task where `group` in
+        <foreach collection="list" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+        order by create_at desc
+    </select>
+    <insert id="batchInsertUser2Task">
+        insert into tb_ops_schedule_user2task(`user_id`,`task_id`,`create_at`)
+        values
+        <foreach collection="list" item="item" index="index" separator="," >
+            (#{item.userId},#{item.taskId},now())
+        </foreach>
+    </insert>
+    <select id="selectById" resultType="com.ximalaya.ops.schedule.web.model.po.ScheduleTaskPO">
+        select * from tb_ops_schedule_task where `id`=#{id}
+    </select>
+    <update id="update" parameterType="com.ximalaya.ops.schedule.web.model.po.ScheduleTaskPO">
+        update tb_ops_schedule_task set `group`=#{group},`key`=#{key},`description`=#{description},
+        `update_uid`=#{updateUid},`update_at`=now(),`type`=#{type},`period`=#{period},`time`=#{time} where id=#{id}
+    </update>
+    <delete id="delete">
+        delete from tb_ops_schedule_task where id=#{id} and create_uid=#{createUid}
+    </delete>
+    <delete id="deleteUser2Task">
+        delete from tb_ops_schedule_user2task where task_id=#{taskId}
+    </delete>
+</mapper>

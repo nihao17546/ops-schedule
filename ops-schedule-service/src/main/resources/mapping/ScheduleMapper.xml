@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.ximalaya.ops.schedule.service.dao.IScheduleDAO">
+    <select id="selectById" resultType="com.ximalaya.ops.schedule.service.model.SchedulePO">
+        select * from tb_ops_schedule where id=#{id}
+    </select>
+    <select id="selectByGroup" resultType="com.ximalaya.ops.schedule.service.model.SchedulePO">
+        select * from tb_ops_schedule where group=#{group}
+    </select>
+    <select id="selectAll" resultType="com.ximalaya.ops.schedule.service.model.SchedulePO">
+        select * from tb_ops_schedule
+    </select>
+</mapper>

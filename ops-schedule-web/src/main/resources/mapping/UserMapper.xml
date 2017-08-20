@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.ximalaya.ops.schedule.web.dao.IUserDAO">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.ximalaya.ops.schedule.web.model.po.ScheduleUserPO">
+        insert into tb_ops_schedule_user(username,password,create_at) values(#{username},#{password},now())
+    </insert>
+    <select id="selectByUsernameAndPassword" resultType="com.ximalaya.ops.schedule.web.model.po.ScheduleUserPO">
+        select * from tb_ops_schedule_user where username=#{username} and password=#{password}
+    </select>
+    <select id="selectById" resultType="com.ximalaya.ops.schedule.web.model.po.ScheduleUserPO">
+        select * from tb_ops_schedule_user where id=#{id}
+    </select>
+    <select id="selectByUsername" resultType="com.ximalaya.ops.schedule.web.model.po.ScheduleUserPO">
+        select * from tb_ops_schedule_user where username=#{username}
+    </select>
+    <update id="update" parameterType="com.ximalaya.ops.schedule.web.model.po.ScheduleUserPO">
+        update tb_ops_schedule_user set password=#{password} where id=#{id}
+    </update>
+    <select id="selectByIds" resultType="com.ximalaya.ops.schedule.web.model.po.ScheduleUserPO">
+        select * from tb_ops_schedule_user where id in
+        <foreach collection="list" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </select>
+    <select id="selectUsersByTaskId" resultType="com.ximalaya.ops.schedule.web.model.po.ScheduleUserPO">
+        select b.* from tb_ops_schedule_user2task a,tb_ops_schedule_user b
+        where a.task_id=#{taskId} and a.user_id=b.id
+        order by a.create_at
+    </select>
+</mapper>
