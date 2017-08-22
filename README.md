@@ -1,5 +1,5 @@
 # ops-schedule
-基于zookeeper的分布式任务调度
+基于zookeeper的分布式任务调度，多台实例、保证一台任务执行，任务执行策略可在线修改无须重启机器
 #### 依赖
 <pre>
  &lt;dependency&gt;
