@@ -44,17 +44,11 @@ public class TaskHandler {
     }
 
     protected static boolean hasGroup(String group){
-        if(taskMap.containsKey(group)){
-            return true;
-        }
-        return false;
+        return taskMap.containsKey(group);
     }
 
     protected static boolean isRunning(String group){
-        if(running.containsKey(group)){
-            return true;
-        }
-        return false;
+        return running.containsKey(group);
     }
 
     protected static void start(String group) throws ScheduleException{
