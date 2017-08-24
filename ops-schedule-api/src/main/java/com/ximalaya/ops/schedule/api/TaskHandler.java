@@ -1,6 +1,7 @@
 package com.ximalaya.ops.schedule.api;
 
 import com.google.common.base.Preconditions;
+import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +17,12 @@ public class TaskHandler {
     private static final Timer timer = new Timer();
     private static final Map<String, Mission> taskMap = new ConcurrentHashMap<>();
     private static final Map<String, TimerTask> running = new ConcurrentHashMap<>();
+
+    protected static void addAuth(CuratorFramework client) throws Exception{
+        for(String group : taskMap.keySet()){
+            client.getZookeeperClient().getZooKeeper().addAuthInfo("digest",taskMap.get(group).getKey().getBytes());
+        }
+    }
 
     protected static void addJob(String group, Mission mission) throws ScheduleException{
         if(taskMap.putIfAbsent(group, mission) != null){
@@ -64,7 +71,11 @@ public class TaskHandler {
             TimerTask timerTask = new TimerTask() {
                 @Override
                 public void run() {
-                    mission.execute();
+                    try {
+                        mission.execute();
+                    }catch (Exception e){
+                        logger.error("group[" + group + "]任务执行异常", e);
+                    }
                 }
             };
             if(mission.getType() == TaskTypeEnum.unfixed){

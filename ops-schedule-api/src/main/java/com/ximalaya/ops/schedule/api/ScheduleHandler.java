@@ -4,10 +4,13 @@ import com.google.common.base.Preconditions;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.recipes.cache.*;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -63,35 +66,48 @@ public class ScheduleHandler implements InitializingBean, DisposableBean{
     private final String zk_dispatch_path = "/ops-schedule/dispatch";
     private final String zk_task_path = "/ops-schedule/task";
     private String IP;
+    private String HOSTNAME;
 
     private CuratorFramework client;
 
     @Override
     public void afterPropertiesSet() throws Exception {
         IP = InetAddress.getLocalHost().getHostAddress().toString();
+        HOSTNAME = InetAddress.getLocalHost().getHostName().toString();
         Preconditions.checkNotNull(zk_connection);
         Preconditions.checkNotNull(configs);
         Preconditions.checkNotNull(session_timeout);
-        // 重试策略：初试时间为1s 重试50次
-        RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 50);
+        // 重试策略：初试时间为1s 重试多次
+        RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, Integer.MAX_VALUE);
         client = CuratorFrameworkFactory.builder()
                 .connectString(zk_connection)
                 .sessionTimeoutMs(session_timeout)
                 .connectionTimeoutMs(connection_timeout)
                 .retryPolicy(retryPolicy)
                 .build();
+        client.getCuratorListenable().addListener(new CuratorListener() {
+            @Override
+            public void eventReceived(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
+                if(curatorEvent != null
+                        && curatorEvent.getWatchedEvent() != null
+                        && curatorEvent.getWatchedEvent().getState() != null
+                        && curatorEvent.getWatchedEvent().getState() == Watcher.Event.KeeperState.SyncConnected){
+                    TaskHandler.addAuth(curatorFramework);
+                }
+            }
+        });
         client.start();
         logger.info("zookeeper client started");
 
-        String patternKey = "^[a-zA-Z0-9]{1,10}:{1}[a-zA-Z0-9]{1,10}$";
         for(JobConfig jobConfig : configs){
             Preconditions.checkNotNull(jobConfig.getKey());
             Preconditions.checkNotNull(jobConfig.getMission());
             Preconditions.checkNotNull(jobConfig.getGroup());
-            if(!Pattern.matches(patternKey, jobConfig.getKey())){
+            if(!Pattern.matches("^[a-zA-Z0-9]{1,10}:{1}[a-zA-Z0-9]{1,10}$", jobConfig.getKey())){
                 throw new ScheduleException("group["+jobConfig.getGroup()+"] key 格式错误");
             }
-            client.getZookeeperClient().getZooKeeper().addAuthInfo("digest", jobConfig.getKey().getBytes());
+            jobConfig.getMission().setKey(jobConfig.getKey());
+
             String groupPath = zk_dispatch_path + "/" + jobConfig.getGroup();
 
             TaskHandler.addJob(groupPath, jobConfig.getMission());
@@ -110,32 +126,8 @@ public class ScheduleHandler implements InitializingBean, DisposableBean{
                         }
                     } else if (event.getType() == PathChildrenCacheEvent.Type.CHILD_ADDED) {
                         setJob(data);
-                        LeaderLatch leaderLatch = new LeaderLatch(client, data.getPath(), IP);
-                        leaderLatch.addListener(new LeaderLatchListener() {
-                            @Override
-                            public void isLeader() {
-                                logger.warn("I became the executor of this mission[" + data.getPath() + "]");
-                                try {
-                                    if (!TaskHandler.isRunning(data.getPath())) {
-                                        TaskHandler.start(data.getPath());
-                                    }
-                                } catch (ScheduleException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-
-                            @Override
-                            public void notLeader() {
-                                logger.warn("I am no longer the executor of this mission[" + data.getPath() + "]");
-                                try {
-                                    if (TaskHandler.isRunning(data.getPath())) {
-                                        TaskHandler.stop(data.getPath());
-                                    }
-                                } catch (ScheduleException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
+                        LeaderLatch leaderLatch = new LeaderLatch(client, data.getPath(), IP + "[" + HOSTNAME + "]");
+                        leaderLatch.addListener(new ScheduleLeaderLatchListener(data.getPath()));
                         leaderLatch.start();
                     } else if (event.getType() == PathChildrenCacheEvent.Type.CHILD_UPDATED) {
                         logger.warn("更新任务[" + data.getPath() + "]");
