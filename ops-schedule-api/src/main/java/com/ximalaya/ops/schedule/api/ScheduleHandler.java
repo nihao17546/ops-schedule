@@ -77,6 +77,21 @@ public class ScheduleHandler implements InitializingBean, DisposableBean{
         Preconditions.checkNotNull(zk_connection);
         Preconditions.checkNotNull(configs);
         Preconditions.checkNotNull(session_timeout);
+
+        for(JobConfig jobConfig : configs){
+            Preconditions.checkNotNull(jobConfig.getKey());
+            Preconditions.checkNotNull(jobConfig.getMission());
+            Preconditions.checkNotNull(jobConfig.getGroup());
+            if(!Pattern.matches("^[a-zA-Z0-9]{1,10}:{1}[a-zA-Z0-9]{1,10}$", jobConfig.getKey())){
+                throw new ScheduleException("group["+jobConfig.getGroup()+"] key 格式错误");
+            }
+            jobConfig.getMission().setKey(jobConfig.getKey());
+
+            String groupPath = zk_dispatch_path + "/" + jobConfig.getGroup();
+
+            TaskHandler.addJob(groupPath, jobConfig.getMission());
+        }
+
         // 重试策略：初试时间为1s 重试多次
         RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, Integer.MAX_VALUE);
         client = CuratorFrameworkFactory.builder()
@@ -98,20 +113,6 @@ public class ScheduleHandler implements InitializingBean, DisposableBean{
         });
         client.start();
         logger.info("zookeeper client started");
-
-        for(JobConfig jobConfig : configs){
-            Preconditions.checkNotNull(jobConfig.getKey());
-            Preconditions.checkNotNull(jobConfig.getMission());
-            Preconditions.checkNotNull(jobConfig.getGroup());
-            if(!Pattern.matches("^[a-zA-Z0-9]{1,10}:{1}[a-zA-Z0-9]{1,10}$", jobConfig.getKey())){
-                throw new ScheduleException("group["+jobConfig.getGroup()+"] key 格式错误");
-            }
-            jobConfig.getMission().setKey(jobConfig.getKey());
-
-            String groupPath = zk_dispatch_path + "/" + jobConfig.getGroup();
-
-            TaskHandler.addJob(groupPath, jobConfig.getMission());
-        }
 
         //监听
         PathChildrenCache watcher = new PathChildrenCache(client, zk_dispatch_path, false);
