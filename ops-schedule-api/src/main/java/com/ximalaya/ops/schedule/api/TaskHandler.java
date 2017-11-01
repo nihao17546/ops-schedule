@@ -14,7 +14,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TaskHandler {
     private static final Logger logger = LoggerFactory.getLogger(TaskHandler.class);
 
-    private static final Timer timer = new Timer();
     private static final Map<String, Mission> taskMap = new ConcurrentHashMap<>();
     private static final Map<String, TimerTask> running = new ConcurrentHashMap<>();
 
@@ -79,7 +78,7 @@ public class TaskHandler {
                 }
             };
             if(mission.getType() == TaskTypeEnum.unfixed){
-                timer.schedule(timerTask, mission.getPeriod(), mission.getPeriod());
+                new Timer().schedule(timerTask, mission.getPeriod(), mission.getPeriod());
                 logStr = "this task runs every "
                         + mission.getPeriod()
                         + " milliseconds and will run for the first time in "
@@ -106,7 +105,7 @@ public class TaskHandler {
                 if(date.before(new Date())){
                     date = addDay(date, 1);
                 }
-                timer.scheduleAtFixedRate(timerTask, date, 24*60*60*1000);
+                new Timer().scheduleAtFixedRate(timerTask, date, 24*60*60*1000);
                 logStr = "this task will run at " + mission.getTime() + " every day.";
             }
             else{
